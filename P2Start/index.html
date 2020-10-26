@@ -1,0 +1,315 @@
+<!-- 
+Alex Ketavongsa 
+4-22-20
+ISTE-340 Project 2 
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ISTE340 - Project 2</title>
+<link rel="icon" type="image/png" href="https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png">
+</head>
+
+<!-- import custom google font -->
+<link rel="stylesheet" type="text/css" href="assets/styles.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+  
+<!-- import jquery -->
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/jquery-1.12.1.js"></script>
+<script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+ 
+<!--  //import data tables  -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.20/datatables.min.css"/>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.20/datatables.min.js"></script>
+
+<!-- import slick -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick-theme.min.css" rel="stylesheet" />
+ 
+<!--  import swipebox -->
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jquery.swipebox/1.3.0.2/css/swipebox.min.css">
+
+<!--  import featherlight lightbox -->
+<link href="//cdn.jsdelivr.net/npm/featherlight@1.7.14/release/featherlight.min.css" type="text/css" rel="stylesheet" />
+<script src="//cdn.jsdelivr.net/npm/featherlight@1.7.14/release/featherlight.min.js" type="text/javascript" charset="utf-8"></script>
+
+
+<!-- start javascript calls to fetch data from API -->
+<script type="text/javascript">
+
+	//now what?
+	//api:  http://www.ist.rit.edu/api/
+    function xhr(getPost,d,idForSpinner) {
+        return $.ajax({
+            type:getPost,
+            dataType: 'json',
+            data: d,
+            cache: false,
+            async: true,
+            url: 'proxy.php',
+            beforeSend:function(){
+                $(idForSpinner).append('<img src="assets/media/gears.gif" class="spin"/>');
+            }
+        }).always(function(){
+            $(idForSpinner).find('.spin').fadeOut(500, function(){
+                $(this).remove();
+            });
+        }).fail(function(err){
+            console.log('there was an AJAX error');
+            console.log(err);
+        });
+    }
+    
+        //find out which faculty I am
+        function getAttributesByName(arr,name,val){
+            var result=null;
+            $.each(arr,function(){
+                if(this[name]===val){
+                    result=this;
+                }
+            });
+            return result;
+        }
+
+	$(document).ready(function(){
+//		//get about...
+//        $.ajax({
+//            type: 'get',
+//            url: 'proxy.php',
+//            data: {path:"/about/"},
+//            dataType: 'json'
+//        }).done(function(json){
+//            console.log(json.title);
+        
+    //get the about section
+    xhr('get',{path:'/about/'}, '#content').done(function(json){$('#content').append('<h2>'+ json.title +'</h2>' + '<p>' + json.description + '</p>' + "<q>" + json.quote + "</q>" + "<p> -" + json.quoteAuthor + "</p>");});
+        
+	//get undergraduate 
+    xhr('get',{path:'/degrees/undergraduate/'}, '#undergraduate').done(function(json){
+			var accordion = '';
+			$.each(json.undergraduate,function(i, item){
+                accordion += '<h3>'+ this.title +'</h3>'+'<div><p>'+ this.description +"</p>"+ "<p>Concentrations: " + this.concentrations +'</p></div>';
+			});
+			//set properties for accordion
+			$('.undergraduate').append(accordion).accordion({
+				animate: 200,
+				collapsible: true,
+				active: false
+			   });			
+			});
+    
+    //get graduate
+    xhr('get',{path:'/degrees/graduate/'}, '#graduate').done(function(json){
+    		var accordion = '';
+			$.each(json.graduate,function(i, item){
+                if(this.degreeName && this.title && this.concentrations) {
+                accordion += '<h3>'+ this.title +'</h3>' + '<div><p>'+ this.description +'</p>' + '<p>Concentrations: '+ this.concentrations +'</p></div>';
+                }   
+			});
+			//set properties for accordion 
+			$('.graduate').append(accordion).accordion({
+				animate: 200,
+				collapsible: true,
+				active: false
+			});
+		});
+        
+        //get minors
+        xhr('get',{path:'/minors/UgMinors'}, '#minors').done(function(json){
+        	var slick = '';
+			$.each(json.UgMinors,function(i, item){
+               slick += '<div class="minorsSlick"><h2 class="minorsTitle">'+ this.title +'</h2>' + '<h4>'+ this.description +'</h4>' + '<h4>'+ this.courses +'</h4>' + '<h4>'+ this.note +'</h4></div>';                
+			});
+			//set properties for slick slider
+			$('.minors').append(slick).slick({
+				dots: true,
+  				infinite: true,
+  				slidesToShow: 2,
+  				slidesToScroll:1
+  			})
+		});
+		
+
+		//get co-op table
+		xhr('get',{path:'/employment/coopTable/coopInformation'}, '#coopTable').done(function(json){
+		var table="<tbody>";
+        $.each(json.coopInformation,function() {
+        	//get employer information
+        	table+='<tr><td>'+this.employer+
+        	'</td>'+'<td>'+this.degree+
+			'</td>'+'<td>'+this.city+
+        	'</td>'+'<td>'+this.term+'</td></tr>';
+        });
+        table += '</tbody>';
+        $('#coopTable').append(table).DataTable();
+	});
+	
+		//get employment table
+		xhr('get',{path:'/employment/employmentTable/professionalEmploymentInformation'}, '#employmentTable').done(function(json){
+		var table="<tbody>";
+        $.each(json.professionalEmploymentInformation,function() {
+        	//get employer information
+        	table+='<tr><td>'+this.employer+
+        	'</td>'+'<td>'+this.degree+
+			'</td>'+'<td>'+this.city+
+        	'</td>'+'<td>'+this.title+
+        	'</td>'+'<td>'+this.startDate+'</td></tr>';
+        });
+        table += '</tbody>';
+        $('#employmentTable').append(table).DataTable();
+	});
+
+		//FUNCTIONS FOR CO-OP AND EMPLOYMENT
+		//(tried to change between co-op and employment table with button click but didn't work)
+		
+// 		get co-op table
+// 		function getCoop() {
+// 		xhr('get',{path:'/employment/coopTable/coopInformation'}, '#coopTable').done(function(json){
+// 		var table="<tbody>";
+//         $.each(json.coopInformation,function() {
+//         	go through coop employers, create string
+//         	table+='<tr><td>'+this.employer+
+//         	'</td>'+'<td>'+this.degree+
+// 			'</td>'+'<td>'+this.city+
+//         	'</td>'+'<td>'+this.term+'</td></tr>';
+//         });
+//         table += '</tbody>';
+//         $('#coopTable').append(table).DataTable();
+// 	});
+// }
+// 	
+// 		get employment table
+//  		function getEmployment() {
+// 		xhr('get',{path:'/employment/employmentTable/professionalEmploymentInformation'}, '#employmentTable').done(function(json){
+// 		var table="<tbody>";
+//         $.each(json.professionalEmploymentInformation,function() {
+//         	go through coop employers, create string
+//         	table+='<tr><td>'+this.employer+
+//         	'</td>'+'<td>'+this.degree+
+// 			'</td>'+'<td>'+this.city+
+//         	'</td>'+'<td>'+this.title+
+//         	'</td>'+'<td>'+this.startDate+'</td></tr>';
+//         });
+//         table += '</tbody>';
+//         $('#table').append(table).DataTable();
+// 	});
+// }
+
+// 	$("#coopButton").click(function(){
+// 	    document.getElementById("header").innerHTML = ("Co-Op Table");
+// 	    datatable.clear().draw();
+// 		datatable.rows.add(data);
+// 	    coopTable.destroy();
+// 	    
+// // 	    getCoop();
+// 		
+// });
+// 
+// 	$("#employmentButton").click(function(){
+// 	    document.getElementById("header").innerHTML = ("Employment Table");
+// 	    var employmentTable = $('#employmentTable').DataTable();
+// 	    employmentTable.clear().draw();
+// 	    employmentTable.destroy();
+// // 	    getEmployment();
+// 
+// 
+// });
+		//get faculty
+        xhr('get', {path: '/people/'}, '#people').done(function(json){
+            var x='';
+            $.each(json.faculty,function(i, item){
+               x += '<div class="faculty" data-featherlight="#mylightbox" data-uname="'+this.username+'"data-type="faculty"><h5>'+this.name+'</h5><img style="width:100px; height: 100px" src="'+this.imagePath+'"/></div>';
+
+        })
+           $('#people').append(x);
+            
+            //when faculty box clicked, display selected JSON info in lightbox window
+            $('.faculty').on('click',function(){
+            	var me=getAttributesByName(json.faculty, 'username',$(this).attr('data-uname'));            	
+             	$("#mylightbox").html("<p>"+"Name: " + me.name + "</p>" + "<p>" + "Title: " + me.title + "</p>" + "<p>" + "Office: " + me.office + "</p>" + "<p>" + "Phone: " + me.phone + "</p>" + "<p>" + "Email: " + me.email+"</p>");
+            });
+        }); 
+        
+    }); //end of document ready
+                      
+</script>
+</head>
+
+<!-- append the retrieved data to the body -->
+<body>
+
+  <h1>IST Department Site</h1>
+   	<div class="container">
+	<div id="content"></div>
+    </div>
+    
+     
+   	<h1>Undergraduate Majors</h1>
+    <div class="undergraduate"></div>
+	<h1>Graduate Majors</h1>
+    <div class="graduate"></div>
+    
+    <h1>Minors</h1>
+    <div class="minors"></div>
+    
+
+ 
+<!-- 
+ <button id="coopButton">View Co-Op Table</button>
+ <button id="employmentButton">View Employment Table</button>
+ -->
+
+
+<!-- 
+	<h1 id="header">Co-Op Table</h1>	
+ -->
+ 
+ 	<h1>Co-Op Table</h1>	
+
+	    <table id="coopTable">
+				<thead>
+					<tr>
+						<th>Employer</th>
+						<th>Degree</th>
+						<th>City</th>
+						<th>Term</th>
+					</tr>
+				</thead>
+	</table>
+	
+<!-- 
+	<h1 id="header">Employment Table</h1>	
+ -->
+	<h1>Employment Table</h1>	
+
+	<table id="employmentTable">
+		<thead>
+			<tr>
+				<th>Employer</th>
+				<th>Degree</th>
+				<th>City</th>
+				<th>Title</th>
+				<th>Start Date</th>
+			</tr>
+		</thead>	
+	</table>
+
+
+	<h1>Our People</h1>
+	<h2>To view more about our faculty and staff, click below.</h2>
+	<div id="people"></div>
+	
+	<div id="mylightbox"></div>
+
+   
+    <h1>Where Our Students Work</h1> 
+    <div class="map">
+    <iframe width="100%" height="500" scrolling="no" frameBorder="0" src="http://ist.rit.edu/api/map.php" ></iframe>
+</div>
+
+
+</body>
+</html>
