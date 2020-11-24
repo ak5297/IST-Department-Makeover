@@ -121,9 +121,9 @@ body {
   color: black !important;
 }
 
-/*  */
+/* displays the IST map  */
 .map {
-	padding-left: 200px;
+	padding-left: 150px;
 	padding-bottom: 100px;
 	overflow: hidden;
 }
